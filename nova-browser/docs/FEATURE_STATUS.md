@@ -6,24 +6,24 @@ Legend: **Implemented** = source exists; **Partial** = only part of the feature 
 
 | Feature | Current status | Important limitation |
 |---|---|---|
-| URL/search recognition and unsafe-scheme blocking | Implemented; Stage 1 unit tests | Navigation scheme filter is applied to WebView navigation |
+| URL/search recognition and unsafe-scheme blocking | Implemented; unit tested | Navigation scheme filter is applied to WebView navigation |
 | Six built-in search engines and custom engine core | Implemented in core | Engine selection/custom-engine management UI is not complete |
-| Tabs, private tabs, reopen closed, session restore | Implemented in core and shell | Tab groups, tab overview, duplicate and pin controls still need UI |
-| Private browsing | Partial | Private tabs are excluded from session/history; WebView incognito behavior needs device verification |
+| Tabs, private tabs, reopen closed, session restore | Implemented in core and shell | Tab overview, duplicate, pin and tab-group assignment UI now exists; device behavior untested |
+| Private browsing | Partial | Private tabs are excluded from session/history; WebView incognito and cookie isolation need device verification |
 | Bookmarks | Partial | Persistent data model, add button, list/filter/delete UI |
 | History | Partial | Persistent visit records and clear-history UI; private tabs are excluded |
-| Downloads | Partial | iOS WebView download events can create download-list records; file transfer, progress, storage permissions and share/export are not implemented or verified |
-| Password manager | Partial | SecureStore Keychain vault and LocalAuthentication helper exist; save/fill/manage UI and biometric testing are not complete |
-| Find in page | Not implemented | No find UI or WebView search bridge yet |
+| Downloads | Partial | iOS WebView download events can create download-list records; file transfer, progress, saving to Files and share/export are not implemented |
+| Password manager | Partial | Keychain-backed SecureStore, Touch ID/Face ID unlock, save/delete UI and foreground auto-lock; automatic website autofill is not implemented |
+| Find in page | Partial | Find UI calls WebKit's window.find; match counts, highlighting controls and device verification are not complete |
 | Reader mode | Partial | User-triggered page-text extraction and reader display; article extraction quality and site coverage are untested |
 | Translation | Partial | Opens Google's web translation page; no native translation engine |
-| Site permissions manager | Partial | Permission data model and list view; it does not yet intercept and enforce each WebView permission prompt |
-| Settings | Partial | Homepage, history, popup/tracker toggles, autoplay preference and reader theme controls; several settings are not yet enforced |
+| Site permissions manager | Partial | Per-site Ask/Allow/Block preferences are stored and displayed; they do not yet intercept and enforce each WebView permission prompt |
+| Settings | Partial | Homepage, history, popup/tracker toggles, autoplay preference and reader theme controls exist; popup, Do Not Track and clear-on-exit enforcement is not complete |
 | Content blocking | Partial | Starter tracker host list blocks matching WebView navigation requests only; it does not filter all page subresources and is not a full filter-list engine |
 | Homepage | Partial | Configurable homepage is used for new tabs; no designed start-page widgets yet |
-| Tab groups | Partial | Persistent group data model exists; group management and assignment UI is not complete |
-| Media panel / per-tab controls | Not implemented | Stage 1 only has the playing indicator and native lock-screen integration |
-| Autoplay controls | Partial | User-gesture preference is connected to WebView; full block mode and per-site rules are not implemented |
+| Tab groups | Partial | Create groups, assign/remove tabs and show group membership; group editing/deletion and persistence reconciliation need more work |
+| Media panel | Partial | Per-tab title/site/state, play/pause, mute and pause-all controls; embedded-player coverage and device behavior untested |
+| Autoplay controls | Partial | WebView user-gesture preference is connected; full block mode and per-site rules are not implemented |
 | Accessibility and visual polish | Not tested | Requires VoiceOver and physical-device review |
 | Native Swift media module | Implemented in source; not compiled | Must pass EAS iOS build and device playback tests |
 | Lock screen / Control Center audio | Partial; not tested | Depends on native module, WebKit behavior and iOS background execution |
@@ -32,10 +32,10 @@ Legend: **Implemented** = source exists; **Partial** = only part of the feature 
 ## Verification record
 
 - Stage 1 core tests: 13 passed in the earlier authoring run.
-- New feature-model tests: added to CI; results pending a GitHub Actions run.
-- TypeScript: tsconfig.json now includes App.tsx and BrowserPanel.tsx; CI result pending.
+- GitHub Actions on commit deaa503ce5b4888dd5d8051f946452aa063380c6: TypeScript typecheck passed; all 20 unit tests passed.
+- Additional password-vault auto-lock and media-panel changes were committed after that run; their CI run is pending.
 - Swift compilation: not performed.
 - iOS simulator/device run: not performed.
 - IPA: not built or signed yet.
 
-Do not treat a passing TypeScript/unit-test workflow as proof of iOS runtime compatibility. The next required verification is a successful EAS development build followed by installation and testing on an iOS 16.7.16 device.
+A passing TypeScript/unit-test workflow is not proof of iOS runtime compatibility. The next required verification is a successful EAS development build followed by installation and testing on an iOS 16.7.16 device.

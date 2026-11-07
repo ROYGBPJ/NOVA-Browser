@@ -165,7 +165,7 @@ export default function App() {
               const url=event.nativeEvent.downloadUrl;
               const name=url.split('/').pop()?.split('?')[0] || 'download';
               const nextData=addDownload(data,url,name);
-              const item=nextData.downloads[0];
+              const item=nextData.downloads.find(x=>x.url===url && !data.downloads.some(old=>old.id===x.id));
               setData(nextData);
               if (!item || !ROOT) return;
               const destination=ROOT + item.id + '-' + item.filename;

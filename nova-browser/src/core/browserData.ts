@@ -115,7 +115,7 @@ export function addCustomSearch(data: BrowserData, name: string, template: strin
   return { ...data, customEngines: addCustomEngine(data.customEngines, name, template) };
 }
 export function removeCustomSearch(data: BrowserData, engineId: string): BrowserData {
-  return { ...data, customEngines: data.customEngines.filter(engine => engine.id !== engineId) };
+  return { ...data, customEngines: data.customEngines.filter(engine => engine.id !== engineId), settings: data.settings.searchEngineId === engineId ? { ...data.settings, searchEngineId: 'ddg' } : data.settings };
 }
 export function updateSettings(data: BrowserData, patch: Partial<BrowserSettings>): BrowserData {
   return { ...data, settings: { ...data.settings, ...patch } };

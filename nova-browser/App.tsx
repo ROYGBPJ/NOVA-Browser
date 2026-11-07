@@ -11,6 +11,7 @@ import { READER_EXTRACT_JS } from './src/reader';
 import { NovaMedia } from './modules/nova-media';
 import BrowserPanel from './BrowserPanel';
 import TabsPanel from './TabsPanel';
+import MediaPanel from './MediaPanel';
 import { emptyBrowserData, normalizeBrowserData, serializeBrowserData, addBookmark, recordVisit, updateSettings, addDownload, createGroup, assignTabToGroup, type BrowserData } from './src/core/browserData';
 import { isBlockedTracker, shouldAllowNavigation } from './src/core/contentBlocking';
 
@@ -31,6 +32,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<PanelSection | null>(null);
   const [tabsVisible, setTabsVisible] = useState(false);
+  const [mediaVisible, setMediaVisible] = useState(false);
   const [findVisible, setFindVisible] = useState(false);
   const [findText, setFindText] = useState('');
   const [reader, setReader] = useState<{title:string;text:string;url:string}|null>(null);
@@ -63,7 +65,7 @@ export default function App() {
     const sub = NovaMedia.onRemoteCommand(({ command, position, interval }) => {
       const id = nowPlayingTab(media), wv = id ? refs.current[id] : null;
       if (!wv) return;
-      const cmd = command === 'toggle' ? 'play' : command;
+      const cmd = command === 'toggle' ? (media[id]?.state === 'playing' ? 'pause' : 'play') : command;
       wv.injectJavaScript(`window.__novaCmd && window.__novaCmd(${JSON.stringify(cmd)}, ${position ?? interval ?? 'undefined'}); true;`);
     });
     return () => sub.remove();
@@ -158,6 +160,7 @@ export default function App() {
         <Pressable accessibilityLabel="New tab" onPress={()=>dispatchTabs(st=>T.openTab(st,data.settings.homepage))}><Text style={[s.btn,{color:c.fg}]}>＋</Text></Pressable>
         <Pressable accessibilityLabel="New private tab" onPress={()=>dispatchTabs(st=>T.openTab(st,data.settings.homepage,true))}><Text style={[s.btn,{color:c.fg}]}>🕶</Text></Pressable>
         <Pressable accessibilityLabel="Bookmark page" onPress={bookmark}><Text style={[s.btn,{color:c.fg}]}>☆</Text></Pressable>
+        <Pressable accessibilityLabel="Media panel" onPress={()=>setMediaVisible(true)}><Text style={[s.small,{color:c.fg}]}>Media</Text></Pressable>
         <Pressable accessibilityLabel="Reader mode" onPress={openReader}><Text style={[s.small,{color:c.fg}]}>Reader</Text></Pressable>
         <Pressable accessibilityLabel="Find in page" onPress={()=>setFindVisible(true)}><Text style={[s.small,{color:c.fg}]}>Find</Text></Pressable>
         <Pressable accessibilityLabel="Translate page" onPress={translate}><Text style={[s.small,{color:c.fg}]}>Translate</Text></Pressable>
@@ -172,6 +175,10 @@ export default function App() {
           <Pressable key={name} onPress={()=>setPanel(name)}><Text style={s.menuText}>{name}</Text></Pressable>)}
       </View>
       <BrowserPanel visible={!!panel} section={panel || 'Bookmarks'} data={data} currentUrl={active?.url || ''} onChange={setData} onNavigate={navigate} onClose={()=>setPanel(null)}/>
+      <MediaPanel visible={mediaVisible} media={media} onClose={()=>setMediaVisible(false)}
+        onAction={(tabId,command)=>{const wv=refs.current[tabId];const value=command==='mute'?!media[tabId]?.muted:undefined;wv?.injectJavaScript('window.__novaCmd && window.__novaCmd(' + JSON.stringify(command) + ', ' + JSON.stringify(value) + '); true;');}}
+        onStopAll={()=>{Object.keys(media).forEach(id=>refs.current[id]?.injectJavaScript("window.__novaCmd && window.__novaCmd('pause'); true;"));dispatchMedia({type:'stopAll'});}}
+        onSwitchTab={id=>dispatchTabs(st=>T.switchTab(st,id))}/>
       <TabsPanel visible={tabsVisible} tabs={tabs.tabs} activeId={tabs.activeId} groups={data.groups} onClose={()=>setTabsVisible(false)}
         onSwitch={id=>dispatchTabs(st=>T.switchTab(st,id))} onCloseTab={id=>dispatchTabs(st=>T.closeTab(st,id))}
         onDuplicate={id=>dispatchTabs(st=>T.duplicateTab(st,id))} onPin={id=>dispatchTabs(st=>T.togglePin(st,id))}

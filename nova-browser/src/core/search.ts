@@ -14,6 +14,7 @@ export function buildSearchUrl(engine: SearchEngine, query: string): string {
 }
 
 export function addCustomEngine(list: SearchEngine[], name: string, template: string): SearchEngine[] {
+  if (!name.trim()) throw new Error('Engine name is required');
   if (!/^https?:\/\//i.test(template) || !template.includes('%s')) {
     throw new Error('Template must be an http(s) URL containing %s');
   }

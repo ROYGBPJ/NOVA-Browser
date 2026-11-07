@@ -31,10 +31,9 @@ Legend: **Implemented** = source exists; **Partial** = only part of the feature 
 
 ## Verification record
 
-- Stage 1 core tests: 13 passed in the earlier authoring run.
-- GitHub Actions: TypeScript typecheck and 20 tests passed on commit deaa503ce5b4888dd5d8051f946452aa063380c6.
-- Hosted macOS GitHub Actions successfully generated the native iOS project, installed CocoaPods and compiled the iOS Simulator app without signing on commit bb773c64650c02141bf49c5fde11d46b4944285c. This included the Swift media module.
-- New download, custom-search, privacy and clear-on-background changes are undergoing a fresh CI run; the latest final result must be checked before treating the current tip as green.
+- GitHub Actions on the current commit e1dc3e555a8e61a98e7e2e0d9ff506f1e7007551: TypeScript typecheck passed and all 21 unit tests passed.
+- Hosted macOS GitHub Actions run [42423267895](https://github.com/ROYGBPJ/NOVA-Browser/actions/runs/42423267895) successfully generated the native iOS project, installed CocoaPods and compiled the iOS Simulator target without signing. This included the Swift media module and the latest download/search-engine dependencies.
+- The CI job compiled the simulator target; it did not launch the app in an iOS Simulator.
 - No IPA has been produced or signed.
 - No physical iPhone has been used for testing.
 

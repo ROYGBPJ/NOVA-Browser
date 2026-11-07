@@ -10,14 +10,15 @@ import { MEDIA_OBSERVER_JS } from './src/mediaObserver';
 import { READER_EXTRACT_JS } from './src/reader';
 import { NovaMedia } from './modules/nova-media';
 import BrowserPanel from './BrowserPanel';
-import { emptyBrowserData, normalizeBrowserData, serializeBrowserData, addBookmark, recordVisit, updateSettings, addDownload, type BrowserData } from './src/core/browserData';
+import TabsPanel from './TabsPanel';
+import { emptyBrowserData, normalizeBrowserData, serializeBrowserData, addBookmark, recordVisit, updateSettings, addDownload, createGroup, assignTabToGroup, type BrowserData } from './src/core/browserData';
 import { isBlockedTracker, shouldAllowNavigation } from './src/core/contentBlocking';
 
 const ROOT = FileSystem.documentDirectory ?? '';
 const SESSION_FILE = ROOT + 'session.json';
 const DATA_FILE = ROOT + 'browser-data.json';
 type TabAction = (s: T.TabsState) => T.TabsState;
-type PanelSection = 'Bookmarks' | 'History' | 'Downloads' | 'Settings' | 'Permissions';
+type PanelSection = 'Bookmarks' | 'History' | 'Downloads' | 'Settings' | 'Permissions' | 'Passwords';
 
 export default function App() {
   const dark = useColorScheme() === 'dark';
@@ -29,6 +30,9 @@ export default function App() {
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<PanelSection | null>(null);
+  const [tabsVisible, setTabsVisible] = useState(false);
+  const [findVisible, setFindVisible] = useState(false);
+  const [findText, setFindText] = useState('');
   const [reader, setReader] = useState<{title:string;text:string;url:string}|null>(null);
   const refs = useRef<Record<string, WebView | null>>({});
   const loaded = useRef(false);
@@ -98,6 +102,10 @@ export default function App() {
     if (!active) return;
     refs.current[active.id]?.injectJavaScript(READER_EXTRACT_JS);
   };
+  const runFind = (backwards = false) => {
+    if (!active || !findText.trim()) return;
+    refs.current[active.id]?.injectJavaScript('window.find(' + JSON.stringify(findText) + ', false, ' + String(backwards) + ', true, false, false, false); true;');
+  };
   const translate = () => {
     if (!active) return;
     const target = encodeURIComponent(data.settings.translateTarget || 'en');
@@ -151,6 +159,7 @@ export default function App() {
         <Pressable accessibilityLabel="New private tab" onPress={()=>dispatchTabs(st=>T.openTab(st,data.settings.homepage,true))}><Text style={[s.btn,{color:c.fg}]}>🕶</Text></Pressable>
         <Pressable accessibilityLabel="Bookmark page" onPress={bookmark}><Text style={[s.btn,{color:c.fg}]}>☆</Text></Pressable>
         <Pressable accessibilityLabel="Reader mode" onPress={openReader}><Text style={[s.small,{color:c.fg}]}>Reader</Text></Pressable>
+        <Pressable accessibilityLabel="Find in page" onPress={()=>setFindVisible(true)}><Text style={[s.small,{color:c.fg}]}>Find</Text></Pressable>
         <Pressable accessibilityLabel="Translate page" onPress={translate}><Text style={[s.small,{color:c.fg}]}>Translate</Text></Pressable>
         <Pressable accessibilityLabel="Browser menu" onPress={()=>setPanel('Bookmarks')}><Text style={[s.btn,{color:c.fg}]}>☰</Text></Pressable>
         <Text style={{color:c.fg}}>{tabs.tabs.length}</Text>
@@ -158,10 +167,20 @@ export default function App() {
         <Pressable accessibilityLabel="Close tab" onPress={()=>active&&dispatchTabs(st=>T.closeTab(st,active.id))}><Text style={[s.btn,{color:c.fg}]}>✕</Text></Pressable>
       </View>
       <View style={s.menuRow}>
-        {(['Bookmarks','History','Downloads','Settings','Permissions'] as PanelSection[]).map(name=>
+        <Pressable onPress={()=>setTabsVisible(true)}><Text style={s.menuText}>Tabs</Text></Pressable>
+        {(['Bookmarks','History','Downloads','Passwords','Settings','Permissions'] as PanelSection[]).map(name=>
           <Pressable key={name} onPress={()=>setPanel(name)}><Text style={s.menuText}>{name}</Text></Pressable>)}
       </View>
-      <BrowserPanel visible={!!panel} section={panel || 'Bookmarks'} data={data} onChange={setData} onNavigate={navigate} onClose={()=>setPanel(null)}/>
+      <BrowserPanel visible={!!panel} section={panel || 'Bookmarks'} data={data} currentUrl={active?.url || ''} onChange={setData} onNavigate={navigate} onClose={()=>setPanel(null)}/>
+      <TabsPanel visible={tabsVisible} tabs={tabs.tabs} activeId={tabs.activeId} groups={data.groups} onClose={()=>setTabsVisible(false)}
+        onSwitch={id=>dispatchTabs(st=>T.switchTab(st,id))} onCloseTab={id=>dispatchTabs(st=>T.closeTab(st,id))}
+        onDuplicate={id=>dispatchTabs(st=>T.duplicateTab(st,id))} onPin={id=>dispatchTabs(st=>T.togglePin(st,id))}
+        onCreateGroup={name=>{const nextData=createGroup(data,name);setData(nextData);const g=nextData.groups[nextData.groups.length-1];if(g&&active){setData(assignTabToGroup(nextData,g.id,active.id));dispatchTabs(st=>T.updateTab(st,active.id,{groupId:g.id}));}}}
+        onAssignGroup={(tabId,groupId)=>{if(groupId){setData(d=>assignTabToGroup(d,groupId,tabId));dispatchTabs(st=>T.updateTab(st,tabId,{groupId}));}else{setData(d=>({...d,groups:d.groups.map(g=>({...g,tabIds:g.tabIds.filter(x=>x!==tabId)}))}));dispatchTabs(st=>T.updateTab(st,tabId,{groupId:undefined}));}}}/>
+      <Modal visible={findVisible} transparent animationType="fade" onRequestClose={()=>setFindVisible(false)}>
+        <View style={s.findShade}><View style={s.findCard}><Text style={s.findTitle}>Find in page</Text><TextInput value={findText} onChangeText={setFindText} placeholder="Find text" autoFocus style={s.findInput} onSubmitEditing={()=>runFind(false)}/>
+          <View style={s.findButtons}><Pressable onPress={()=>runFind(true)}><Text style={s.findAction}>Previous</Text></Pressable><Pressable onPress={()=>runFind(false)}><Text style={s.findAction}>Next</Text></Pressable><Pressable onPress={()=>setFindVisible(false)}><Text style={s.findAction}>Done</Text></Pressable></View></View></View>
+      </Modal>
       <Modal visible={!!reader} animationType="slide" onRequestClose={()=>setReader(null)}>
         <SafeAreaView style={s.reader}>
           <View style={s.readerHead}><Text style={s.readerTitle}>Reader</Text><Pressable onPress={()=>setReader(null)}><Text style={s.readerClose}>Done</Text></Pressable></View>
@@ -182,5 +201,6 @@ const s=StyleSheet.create({
  menuRow:{flexDirection:'row',justifyContent:'space-around',paddingVertical:7,backgroundColor:'#171c2a'},
  menuText:{fontSize:10,color:'#cfc5ff'},reader:{flex:1,backgroundColor:'#f4efe4'},readerHead:{padding:14,flexDirection:'row',justifyContent:'space-between'},
  readerTitle:{fontSize:22,fontWeight:'700',color:'#222'},readerClose:{color:'#654bd8',fontWeight:'700'},readerBody:{padding:22,gap:12},
- readerUrl:{fontSize:11,color:'#777'},readerText:{lineHeight:28}
+ readerUrl:{fontSize:11,color:'#777'},readerText:{lineHeight:28},
+ findShade:{flex:1,backgroundColor:'#0008',justifyContent:'center',padding:20},findCard:{backgroundColor:'#fff',borderRadius:16,padding:18,gap:14},findTitle:{fontSize:18,fontWeight:'700',color:'#222'},findInput:{backgroundColor:'#eee',padding:12,borderRadius:8,color:'#111'},findButtons:{flexDirection:'row',justifyContent:'space-between'},findAction:{color:'#5a3df0',fontWeight:'700'}
 });

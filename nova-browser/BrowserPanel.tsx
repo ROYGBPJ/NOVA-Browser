@@ -6,11 +6,11 @@ import { authenticateVault, readVault, saveLogin, deleteLogin, type SavedLogin }
 
 type Props = {
   visible: boolean; section: string; data: BrowserData; currentUrl: string; isPrivate: boolean;
-  onChange: (next: BrowserData) => void; onNavigate: (url: string) => void;
+  onChange: (next: BrowserData) => void; onNavigate: (url: string) => void; onShare: (uri: string) => void;
   onClose: () => void;
 };
 const sections = ['Bookmarks', 'History', 'Downloads', 'Settings', 'Permissions', 'Passwords'];
-export default function BrowserPanel({ visible, section, data, currentUrl, isPrivate, onChange, onNavigate, onClose }: Props) {
+export default function BrowserPanel({ visible, section, data, currentUrl, isPrivate, onChange, onNavigate, onShare, onClose }: Props) {
   const [filter, setFilter] = useState('');
   const [home, setHome] = useState(data.settings.homepage);
   const [unlocked, setUnlocked] = useState(false);
@@ -65,8 +65,8 @@ export default function BrowserPanel({ visible, section, data, currentUrl, isPri
           {!data.history.length && <Text style={p.sub}>No browsing history saved.</Text>}
         </>}
         {section === 'Downloads' && <>
-          <Text style={p.sub}>Download events are listed here. File transfer, progress, saving to Files and share/export still need implementation and iPhone testing.</Text>
-          {data.downloads.map(d => <View key={d.id} style={p.item}><View><Text style={p.itemTitle}>{d.filename}</Text><Text style={p.sub}>{d.status} · {d.url}</Text></View></View>)}
+          <Text style={p.sub}>Files download into NOVA's app storage. Use Share / Save to export through the iOS share sheet. WebView authentication cookies may not be available to the downloader.</Text>
+          {data.downloads.map(d => <View key={d.id} style={p.item}><View style={{flex:1}}><Text style={p.itemTitle}>{d.filename}</Text><Text style={p.sub}>{d.status} · {d.url}</Text></View>{d.localUri&&action('Share / Save',()=>onShare(d.localUri!))}</View>)}
           {!data.downloads.length && <Text style={p.sub}>No downloads yet.</Text>}
         </>}
         {section === 'Settings' && <>

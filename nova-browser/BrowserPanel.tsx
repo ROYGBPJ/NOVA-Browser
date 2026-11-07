@@ -5,12 +5,12 @@ import { removeBookmark, clearHistory, updateSettings, setPermission, permission
 import { authenticateVault, readVault, saveLogin, deleteLogin, type SavedLogin } from './src/security/passwordVault';
 
 type Props = {
-  visible: boolean; section: string; data: BrowserData; currentUrl: string;
+  visible: boolean; section: string; data: BrowserData; currentUrl: string; isPrivate: boolean;
   onChange: (next: BrowserData) => void; onNavigate: (url: string) => void;
   onClose: () => void;
 };
 const sections = ['Bookmarks', 'History', 'Downloads', 'Settings', 'Permissions', 'Passwords'];
-export default function BrowserPanel({ visible, section, data, currentUrl, onChange, onNavigate, onClose }: Props) {
+export default function BrowserPanel({ visible, section, data, currentUrl, isPrivate, onChange, onNavigate, onClose }: Props) {
   const [filter, setFilter] = useState('');
   const [home, setHome] = useState(data.settings.homepage);
   const [unlocked, setUnlocked] = useState(false);
@@ -90,10 +90,10 @@ export default function BrowserPanel({ visible, section, data, currentUrl, onCha
         </>}
         {section === 'Passwords' && <>
           {!unlocked ? <>{action('Unlock with Touch ID / Face ID',unlock)}<Text style={p.sub}>Saved logins use the iPhone Keychain. Authentication and autofill must be tested on the target iPhone.</Text></> : <>
-            <Text style={p.label}>Save login for {originOf(currentUrl) || 'current site'}</Text>
+            {isPrivate ? <Text style={p.sub}>Password saving is disabled in private tabs.</Text> : <><Text style={p.label}>Save login for {originOf(currentUrl) || 'current site'}</Text>
             <TextInput value={username} onChangeText={setUsername} placeholder="Username" autoCapitalize="none" style={p.input}/>
             <TextInput value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry style={p.input}/>
-            {action('Save current login',saveCurrent)}
+            {action('Save current login',saveCurrent)}</>}
             {logins.map(item=><View key={item.id} style={p.item}><View style={{flex:1}}><Text style={p.itemTitle}>{item.origin}</Text><Text style={p.sub}>{item.username}</Text></View>{action('Delete',async()=>{await deleteLogin(item.id);setLogins(await readVault());})}</View>)}
             {!logins.length && <Text style={p.sub}>No saved logins yet.</Text>}
             {action('Lock password vault',()=>{setUnlocked(false);setLogins([]);setPassword('');})}

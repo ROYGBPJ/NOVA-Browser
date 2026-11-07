@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, AppState, Modal, ScrollView, View, Text, Pressable, TextInput, Switch, StyleSheet } from 'react-native';
 import type { BrowserData, Bookmark, PermissionKind } from './src/core/browserData';
-import { removeBookmark, clearHistory, updateSettings, setPermission, permissionFor, originOf } from './src/core/browserData';
+import { removeBookmark, clearHistory, updateSettings, setPermission, permissionFor, originOf, addCustomSearch, removeCustomSearch } from './src/core/browserData';
+import { BUILTIN_ENGINES } from './src/core/search';
 import { authenticateVault, readVault, saveLogin, deleteLogin, type SavedLogin } from './src/security/passwordVault';
 
 type Props = {
@@ -13,6 +14,8 @@ const sections = ['Bookmarks', 'History', 'Downloads', 'Settings', 'Permissions'
 export default function BrowserPanel({ visible, section, data, currentUrl, isPrivate, onChange, onNavigate, onShare, onClose }: Props) {
   const [filter, setFilter] = useState('');
   const [home, setHome] = useState(data.settings.homepage);
+  const [engineName, setEngineName] = useState('');
+  const [engineTemplate, setEngineTemplate] = useState('https://example.com/search?q=%s');
   const [unlocked, setUnlocked] = useState(false);
   const [logins, setLogins] = useState<SavedLogin[]>([]);
   const [username, setUsername] = useState('');
@@ -41,6 +44,7 @@ export default function BrowserPanel({ visible, section, data, currentUrl, isPri
       Alert.alert('Saved', 'Login stored in the iPhone Keychain.');
     } catch { Alert.alert('Save failed', 'The iPhone Keychain could not save this login.'); }
   };
+  const setDataSafe = (next: BrowserData) => onChange(next);
   const permissionRow = (kind: PermissionKind) => {
     const value = permissionFor(data, currentUrl, kind);
     return <View key={kind} style={p.item}><View style={{flex:1}}><Text style={p.itemTitle}>{kind}</Text><Text style={p.sub}>Current site: {value}</Text></View>
@@ -70,6 +74,13 @@ export default function BrowserPanel({ visible, section, data, currentUrl, isPri
           {!data.downloads.length && <Text style={p.sub}>No downloads yet.</Text>}
         </>}
         {section === 'Settings' && <>
+          <Text style={p.label}>Default search engine</Text>
+          {[...BUILTIN_ENGINES,...data.customEngines].map(engine=>action((data.settings.searchEngineId===engine.id?'✓ ':'')+engine.name,()=>onChange(updateSettings(data,{searchEngineId:engine.id}))))}
+          <Text style={p.label}>Add custom search engine</Text>
+          <TextInput value={engineName} onChangeText={setEngineName} placeholder="Engine name" style={p.input}/>
+          <TextInput value={engineTemplate} onChangeText={setEngineTemplate} autoCapitalize="none" placeholder="https://site/search?q=%s" style={p.input}/>
+          {action('Add search engine',()=>{try{setDataSafe(addCustomSearch(data,engineName,engineTemplate));setEngineName('');}catch(e){Alert.alert('Invalid search engine',e instanceof Error?e.message:'Could not add engine');}})}
+          {data.customEngines.map(engine=><View key={engine.id} style={p.item}><Text style={[p.itemTitle,{flex:1}]}>{engine.name}</Text>{action('Remove',()=>onChange(removeCustomSearch(data,engine.id)))}</View>)}
           <Text style={p.label}>Homepage</Text><TextInput value={home} onChangeText={setHome} autoCapitalize="none" style={p.input}/>
           {action('Save homepage', () => onChange(updateSettings(data,{homepage:home})))}
           <Setting label="Save browsing history" value={data.settings.saveHistory} onChange={v=>onChange(updateSettings(data,{saveHistory:v}))}/>

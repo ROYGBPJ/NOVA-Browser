@@ -2,7 +2,7 @@
  * NOVA Browser persistent feature models.
  * Pure TypeScript only: safe to unit-test on Windows without Xcode.
  */
-import { hostOf } from './url';
+import { hostOf } from './url.ts';
 import type { Tab } from './tabs';
 
 export type HistoryEntry = { id: string; url: string; title: string; visitedAt: number };

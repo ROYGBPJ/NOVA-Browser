@@ -25,3 +25,33 @@ jobs:
       - run: npm install
       - run: npm run typecheck
       - run: npm test
+
+  ios-simulator-compile:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install JavaScript dependencies
+        working-directory: nova-browser
+        run: npm install
+      - name: Generate native iOS project
+        working-directory: nova-browser
+        run: npx expo prebuild --platform ios --no-install
+      - name: Install CocoaPods
+        working-directory: nova-browser/ios
+        run: pod install
+      - name: Compile iOS Simulator app without signing
+        working-directory: nova-browser
+        shell: bash
+        run: |
+          WORKSPACE=$(find ios -maxdepth 1 -name "*.xcworkspace" -print -quit)
+          if [ -z "$WORKSPACE" ]; then
+            echo "Expo did not generate an Xcode workspace."
+            exit 1
+          fi
+          SCHEME=$(xcodebuild -list -json -workspace "$WORKSPACE" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['workspace']['schemes'][0])")
+          echo "Building workspace: $WORKSPACE"
+          echo "Building scheme: $SCHEME"
+          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO

@@ -4,7 +4,7 @@
  */
 import { hostOf } from './url.ts';
 import type { Tab } from './tabs';
-import { addCustomEngine, removeEngine, type SearchEngine } from './search';
+import { addCustomEngine, removeEngine, type SearchEngine } from './search.ts';
 
 export type HistoryEntry = { id: string; url: string; title: string; visitedAt: number };
 export type Bookmark = { id: string; url: string; title: string; folder: string; createdAt: number };

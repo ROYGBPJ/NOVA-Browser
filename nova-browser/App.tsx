@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useReducer, useRef, useState } from 'rea
 import { View, TextInput, Text, Pressable, StyleSheet, SafeAreaView, useColorScheme, Alert, Modal, ScrollView } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { resolveInput } from './src/core/url';
 import { BUILTIN_ENGINES, buildSearchUrl } from './src/core/search';
 import * as T from './src/core/tabs';
@@ -12,7 +13,7 @@ import { NovaMedia } from './modules/nova-media';
 import BrowserPanel from './BrowserPanel';
 import TabsPanel from './TabsPanel';
 import MediaPanel from './MediaPanel';
-import { emptyBrowserData, normalizeBrowserData, serializeBrowserData, addBookmark, recordVisit, updateSettings, addDownload, createGroup, assignTabToGroup, type BrowserData } from './src/core/browserData';
+import { emptyBrowserData, normalizeBrowserData, serializeBrowserData, addBookmark, recordVisit, updateSettings, addDownload, updateDownload, createGroup, assignTabToGroup, type BrowserData } from './src/core/browserData';
 import { isBlockedTracker, shouldAllowNavigation } from './src/core/contentBlocking';
 
 const ROOT = FileSystem.documentDirectory ?? '';
@@ -163,8 +164,20 @@ export default function App() {
               if (t.isPrivate) { Alert.alert('Private tab','This download was not added to your saved download list.'); return; }
               const url=event.nativeEvent.downloadUrl;
               const name=url.split('/').pop()?.split('?')[0] || 'download';
-              setData(d=>addDownload(d,url,name));
-              Alert.alert('Download detected','NOVA recorded this download. Saving the file to iPhone storage is not implemented yet.');
+              const nextData=addDownload(data,url,name);
+              const item=nextData.downloads[0];
+              setData(nextData);
+              if (!item || !ROOT) return;
+              const destination=ROOT + item.id + '-' + item.filename;
+              setData(d=>updateDownload(d,item.id,{status:'downloading'}));
+              FileSystem.downloadAsync(url,destination).then(result=>{
+                const ok=result.status>=200 && result.status<300;
+                setData(d=>updateDownload(d,item.id,{status:ok?'complete':'failed',localUri:ok?result.uri:undefined}));
+                Alert.alert(ok?'Download complete':'Download failed',ok?'Saved inside NOVA. Open Downloads and use Share to export it to Files.':'The server did not return a successful download. Sign-in protected downloads may need the website session.');
+              }).catch(()=>{
+                setData(d=>updateDownload(d,item.id,{status:'failed'}));
+                Alert.alert('Download failed','NOVA could not retrieve this file. Some sites require cookies or authentication from the WebView.');
+              });
             }}
             onError={e=>setError(e.nativeEvent.description)}
           />
@@ -188,7 +201,7 @@ export default function App() {
         {(['Bookmarks','History','Downloads','Passwords','Settings','Permissions'] as PanelSection[]).map(name=>
           <Pressable key={name} onPress={()=>setPanel(name)}><Text style={s.menuText}>{name}</Text></Pressable>)}
       </View>
-      <BrowserPanel visible={!!panel} section={panel || 'Bookmarks'} data={data} currentUrl={active?.url || ''} isPrivate={!!active?.isPrivate} onChange={setData} onNavigate={navigate} onClose={()=>setPanel(null)}/>
+      <BrowserPanel visible={!!panel} section={panel || 'Bookmarks'} data={data} currentUrl={active?.url || ''} isPrivate={!!active?.isPrivate} onChange={setData} onNavigate={navigate} onShare={uri=>Sharing.shareAsync(uri,{dialogTitle:'Export NOVA download'})} onClose={()=>setPanel(null)}/>
       <MediaPanel visible={mediaVisible} media={media} onClose={()=>setMediaVisible(false)}
         onAction={(tabId,command)=>{const wv=refs.current[tabId];const value=command==='mute'?!media[tabId]?.muted:undefined;wv?.injectJavaScript('window.__novaCmd && window.__novaCmd(' + JSON.stringify(command) + ', ' + JSON.stringify(value) + '); true;');}}
         onStopAll={()=>{Object.keys(media).forEach(id=>refs.current[id]?.injectJavaScript("window.__novaCmd && window.__novaCmd('pause'); true;"));dispatchMedia({type:'stopAll'});}}

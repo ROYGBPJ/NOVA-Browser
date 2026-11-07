@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "NOVA Browser",
+    "slug": "nova-browser",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.yourname.novabrowser",
+      "deploymentTarget": "15.1",
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"],
+        "NSCameraUsageDescription": "Websites you allow can use the camera.",
+        "NSMicrophoneUsageDescription": "Websites you allow can use the microphone.",
+        "NSLocationWhenInUseUsageDescription": "Websites you allow can use your location.",
+        "NSFaceIDUsageDescription": "Unlock saved passwords with Face ID."
+      }
+    },
+    "plugins": ["expo-secure-store", "expo-local-authentication"]
+  }
+}

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  emptyBrowserData, addBookmark, removeBookmark, recordVisit, clearHistory,
+  emptyBrowserData, addBookmark, removeBookmark, recordVisit, clearHistory, addCustomSearch, removeCustomSearch,
   addDownload, setPermission, permissionFor, createGroup, assignTabToGroup,
   updateSettings, normalizeBrowserData, serializeBrowserData, isThirdPartyRequest
 } from '../core/browserData.ts';
@@ -46,6 +46,14 @@ test('settings persist and malformed storage recovers', () => {
   const d = updateSettings(emptyBrowserData(), { autoplay: 'block', readerTheme: 'sepia' });
   assert.equal(normalizeBrowserData(serializeBrowserData(d)).settings.autoplay, 'block');
   assert.equal(normalizeBrowserData('{broken').settings.autoplay, 'user-gesture');
+});
+test('custom search engines persist and can be removed', () => {
+  let d = addCustomSearch(emptyBrowserData(), 'Example Search', 'https://search.example/?q=%s');
+  assert.equal(d.customEngines.length, 1);
+  assert.equal(normalizeBrowserData(serializeBrowserData(d)).customEngines[0].name, 'Example Search');
+  d = removeCustomSearch(d, d.customEngines[0].id);
+  assert.equal(d.customEngines.length, 0);
+  assert.throws(() => addCustomSearch(d, 'Broken', 'javascript:alert(1)'), /http/);
 });
 test('tracker and navigation filters are conservative', () => {
   assert.equal(isBlockedTracker('https://www.google-analytics.com/collect'), true);

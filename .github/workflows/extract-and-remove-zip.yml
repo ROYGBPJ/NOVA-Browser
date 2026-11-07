@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "nova-browser-stage1.zip"
+      - ".github/workflows/extract-and-remove-zip.yml"
 
 permissions:
   contents: write

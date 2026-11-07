@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { View, TextInput, Text, Pressable, StyleSheet, SafeAreaView, useColorScheme, Alert, Modal, ScrollView } from 'react-native';
+import { AppState, View, TextInput, Text, Pressable, StyleSheet, SafeAreaView, useColorScheme, Alert, Modal, ScrollView } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';

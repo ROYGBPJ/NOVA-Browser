@@ -4,7 +4,8 @@
     "strict": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "skipLibCheck": true
   },
-  "include": ["src", "modules"]
+  "include": ["App.tsx", "BrowserPanel.tsx", "src/**/*.ts", "modules/**/*.ts", "modules/**/*.tsx"]
 }

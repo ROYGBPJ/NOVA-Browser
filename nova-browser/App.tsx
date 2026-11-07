@@ -63,7 +63,9 @@ export default function App() {
 
   useEffect(() => {
     const sub = NovaMedia.onRemoteCommand(({ command, position, interval }) => {
-      const id = nowPlayingTab(media), wv = id ? refs.current[id] : null;
+      const id = nowPlayingTab(media);
+      if (!id) return;
+      const wv = refs.current[id];
       if (!wv) return;
       const cmd = command === 'toggle' ? (media[id]?.state === 'playing' ? 'pause' : 'play') : command;
       wv.injectJavaScript(`window.__novaCmd && window.__novaCmd(${JSON.stringify(cmd)}, ${position ?? interval ?? 'undefined'}); true;`);

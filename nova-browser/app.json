@@ -7,16 +7,21 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.yourname.novabrowser",
-      "deploymentTarget": "15.1",
+      "deploymentTarget": "16.0",
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "NSCameraUsageDescription": "Websites you allow can use the camera.",
         "NSMicrophoneUsageDescription": "Websites you allow can use the microphone.",
         "NSLocationWhenInUseUsageDescription": "Websites you allow can use your location.",
         "NSFaceIDUsageDescription": "Unlock saved passwords with Face ID."
       }
     },
-    "plugins": ["expo-secure-store", "expo-local-authentication"]
+    "plugins": [
+      "expo-secure-store",
+      "expo-local-authentication"
+    ]
   }
 }

@@ -1,19 +1,48 @@
 import React, { useState } from 'react';
-import { Modal, ScrollView, View, Text, Pressable, TextInput, Switch, StyleSheet } from 'react-native';
-import type { BrowserData, Bookmark } from './src/core/browserData';
-import { removeBookmark, clearHistory, updateSettings } from './src/core/browserData';
+import { Alert, Modal, ScrollView, View, Text, Pressable, TextInput, Switch, StyleSheet } from 'react-native';
+import type { BrowserData, Bookmark, PermissionKind } from './src/core/browserData';
+import { removeBookmark, clearHistory, updateSettings, setPermission, permissionFor, originOf } from './src/core/browserData';
+import { authenticateVault, readVault, saveLogin, deleteLogin, type SavedLogin } from './src/security/passwordVault';
 
 type Props = {
-  visible: boolean; section: string; data: BrowserData;
+  visible: boolean; section: string; data: BrowserData; currentUrl: string;
   onChange: (next: BrowserData) => void; onNavigate: (url: string) => void;
   onClose: () => void;
 };
-const sections = ['Bookmarks', 'History', 'Downloads', 'Settings', 'Permissions'];
-export default function BrowserPanel({ visible, section, data, onChange, onNavigate, onClose }: Props) {
+const sections = ['Bookmarks', 'History', 'Downloads', 'Settings', 'Permissions', 'Passwords'];
+export default function BrowserPanel({ visible, section, data, currentUrl, onChange, onNavigate, onClose }: Props) {
   const [filter, setFilter] = useState('');
   const [home, setHome] = useState(data.settings.homepage);
+  const [unlocked, setUnlocked] = useState(false);
+  const [logins, setLogins] = useState<SavedLogin[]>([]);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const title = sections.includes(section) ? section : 'NOVA';
   const action = (label: string, fn: () => void) => <Pressable key={label} style={p.action} onPress={fn}><Text style={p.actionText}>{label}</Text></Pressable>;
+  const unlock = async () => {
+    try {
+      const ok = await authenticateVault();
+      if (!ok) { Alert.alert('Authentication unavailable', 'Set up Touch ID or Face ID on this iPhone before unlocking saved passwords.'); return; }
+      setLogins(await readVault()); setUnlocked(true);
+    } catch { Alert.alert('Could not unlock', 'iOS authentication did not complete.'); }
+  };
+  const saveCurrent = async () => {
+    const origin = originOf(currentUrl);
+    if (!origin || !username.trim() || !password) { Alert.alert('Missing details', 'Enter a username and password on a secure website.'); return; }
+    try {
+      const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2), origin, username: username.trim(), password, createdAt: Date.now() };
+      await saveLogin(entry); setLogins(await readVault()); setUsername(''); setPassword('');
+      Alert.alert('Saved', 'Login stored in the iPhone Keychain.');
+    } catch { Alert.alert('Save failed', 'The iPhone Keychain could not save this login.'); }
+  };
+  const permissionRow = (kind: PermissionKind) => {
+    const value = permissionFor(data, currentUrl, kind);
+    return <View key={kind} style={p.item}><View style={{flex:1}}><Text style={p.itemTitle}>{kind}</Text><Text style={p.sub}>Current site: {value}</Text></View>
+      {action('Ask',()=>onChange(setPermission(data,originOf(currentUrl),kind,'ask')))}
+      {action('Allow',()=>onChange(setPermission(data,originOf(currentUrl),kind,'allow')))}
+      {action('Block',()=>onChange(setPermission(data,originOf(currentUrl),kind,'block')))}
+    </View>;
+  };
   return <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
     <View style={p.root}>
       <View style={p.header}><Text style={p.heading}>{title}</Text>{action('Done', onClose)}</View>
@@ -30,7 +59,7 @@ export default function BrowserPanel({ visible, section, data, onChange, onNavig
           {!data.history.length && <Text style={p.sub}>No browsing history saved.</Text>}
         </>}
         {section === 'Downloads' && <>
-          <Text style={p.sub}>Download records are shown here. iOS WebView download handling and file export still require device validation.</Text>
+          <Text style={p.sub}>Download events are listed here. File transfer, progress, saving to Files and share/export still need implementation and iPhone testing.</Text>
           {data.downloads.map(d => <View key={d.id} style={p.item}><View><Text style={p.itemTitle}>{d.filename}</Text><Text style={p.sub}>{d.status} · {d.url}</Text></View></View>)}
           {!data.downloads.length && <Text style={p.sub}>No downloads yet.</Text>}
         </>}
@@ -38,19 +67,31 @@ export default function BrowserPanel({ visible, section, data, onChange, onNavig
           <Text style={p.label}>Homepage</Text><TextInput value={home} onChangeText={setHome} autoCapitalize="none" style={p.input}/>
           {action('Save homepage', () => onChange(updateSettings(data,{homepage:home})))}
           <Setting label="Save browsing history" value={data.settings.saveHistory} onChange={v=>onChange(updateSettings(data,{saveHistory:v}))}/>
-          <Setting label="Block popups" value={data.settings.blockPopups} onChange={v=>onChange(updateSettings(data,{blockPopups:v}))}/>
+          <Setting label="Block popups (preference)" value={data.settings.blockPopups} onChange={v=>onChange(updateSettings(data,{blockPopups:v}))}/>
           <Setting label="Block known trackers" value={data.settings.blockTrackers} onChange={v=>onChange(updateSettings(data,{blockTrackers:v}))}/>
-          <Setting label="Do Not Track header" value={data.settings.doNotTrack} onChange={v=>onChange(updateSettings(data,{doNotTrack:v}))}/>
-          <Setting label="Clear data on exit" value={data.settings.clearOnExit} onChange={v=>onChange(updateSettings(data,{clearOnExit:v}))}/>
+          <Setting label="Do Not Track (preference)" value={data.settings.doNotTrack} onChange={v=>onChange(updateSettings(data,{doNotTrack:v}))}/>
+          <Setting label="Clear data on exit (preference)" value={data.settings.clearOnExit} onChange={v=>onChange(updateSettings(data,{clearOnExit:v}))}/>
           <Text style={p.label}>Autoplay</Text>
           {(['allow','user-gesture','block'] as const).map(v=>action((data.settings.autoplay===v?'✓ ':'')+({allow:'Allow autoplay', 'user-gesture':'Require user gesture', block:'Block autoplay'}[v]),()=>onChange(updateSettings(data,{autoplay:v}))))}
           <Text style={p.label}>Reader appearance</Text>
           {(['light','sepia','dark'] as const).map(v=>action((data.settings.readerTheme===v?'✓ ':'')+v,()=>onChange(updateSettings(data,{readerTheme:v}))))}
         </>}
         {section === 'Permissions' && <>
-          <Text style={p.sub}>Per-site camera, microphone and location choices are stored by origin. WebView permission prompts remain controlled by iOS and the website's own request flow.</Text>
-          {data.permissions.map(x=><View key={x.origin+x.kind} style={p.item}><View><Text style={p.itemTitle}>{x.kind} · {x.decision}</Text><Text style={p.sub}>{x.origin}</Text></View></View>)}
-          {!data.permissions.length && <Text style={p.sub}>No site permissions have been saved.</Text>}
+          <Text style={p.sub}>Saved site choices are NOVA preferences. iOS/WebKit permission prompts are not yet intercepted and enforced, so these controls do not override iOS prompts.</Text>
+          <Text style={p.label}>{originOf(currentUrl) || 'Open a website to manage permissions'}</Text>
+          {permissionRow('camera')}{permissionRow('microphone')}{permissionRow('location')}{permissionRow('notifications')}
+          {data.permissions.map(x=><Text key={x.origin+x.kind} style={p.sub}>{x.kind}: {x.decision} — {x.origin}</Text>)}
+        </>}
+        {section === 'Passwords' && <>
+          {!unlocked ? <>{action('Unlock with Touch ID / Face ID',unlock)}<Text style={p.sub}>Saved logins use the iPhone Keychain. Authentication and autofill must be tested on the target iPhone.</Text></> : <>
+            <Text style={p.label}>Save login for {originOf(currentUrl) || 'current site'}</Text>
+            <TextInput value={username} onChangeText={setUsername} placeholder="Username" autoCapitalize="none" style={p.input}/>
+            <TextInput value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry style={p.input}/>
+            {action('Save current login',saveCurrent)}
+            {logins.map(item=><View key={item.id} style={p.item}><View style={{flex:1}}><Text style={p.itemTitle}>{item.origin}</Text><Text style={p.sub}>{item.username}</Text></View>{action('Delete',async()=>{await deleteLogin(item.id);setLogins(await readVault());})}</View>)}
+            {!logins.length && <Text style={p.sub}>No saved logins yet.</Text>}
+            {action('Lock password vault',()=>{setUnlocked(false);setLogins([]);setPassword('');})}
+          </>}
         </>}
       </ScrollView>
     </View>

@@ -94,7 +94,7 @@ export default function App() {
     const r = resolveInput(input);
     if (r.kind === 'blocked') { setError(r.reason); return; }
     setError(null);
-    const url = r.kind === 'url' ? r.url : buildSearchUrl(BUILTIN_ENGINES.find(e => e.id === data.settings.searchEngineId) ?? BUILTIN_ENGINES[2], r.query);
+    const url = r.kind === 'url' ? r.url : buildSearchUrl([...BUILTIN_ENGINES,...data.customEngines].find(e => e.id === data.settings.searchEngineId) ?? BUILTIN_ENGINES[2], r.query);
     dispatchTabs(s => T.updateTab(s, active.id, { url }));
   }, [input, active, data.settings.searchEngineId]);
 

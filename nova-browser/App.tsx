@@ -148,6 +148,10 @@ export default function App() {
               if (data.settings.blockTrackers && isBlockedTracker(req.url)) return false;
               return true;
             }}
+            onOpenWindow={event=>{
+              const target=event.nativeEvent.targetUrl;
+              if (!data.settings.blockPopups && shouldAllowNavigation(target)) dispatchTabs(st=>T.openTab(st,target));
+            }}
             onFileDownload={event=>{
               if (t.isPrivate) { Alert.alert('Private tab','This download was not added to your saved download list.'); return; }
               const url=event.nativeEvent.downloadUrl;

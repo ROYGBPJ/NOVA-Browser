@@ -149,10 +149,11 @@ export default function App() {
               return true;
             }}
             onFileDownload={event=>{
+              if (t.isPrivate) { Alert.alert('Private tab','This download was not added to your saved download list.'); return; }
               const url=event.nativeEvent.downloadUrl;
               const name=url.split('/').pop()?.split('?')[0] || 'download';
               setData(d=>addDownload(d,url,name));
-              Alert.alert('Download detected','NOVA saved this download to its download list. Saving the file to iPhone storage still needs device testing.');
+              Alert.alert('Download detected','NOVA recorded this download. Saving the file to iPhone storage is not implemented yet.');
             }}
             onError={e=>setError(e.nativeEvent.description)}
           />
@@ -176,7 +177,7 @@ export default function App() {
         {(['Bookmarks','History','Downloads','Passwords','Settings','Permissions'] as PanelSection[]).map(name=>
           <Pressable key={name} onPress={()=>setPanel(name)}><Text style={s.menuText}>{name}</Text></Pressable>)}
       </View>
-      <BrowserPanel visible={!!panel} section={panel || 'Bookmarks'} data={data} currentUrl={active?.url || ''} onChange={setData} onNavigate={navigate} onClose={()=>setPanel(null)}/>
+      <BrowserPanel visible={!!panel} section={panel || 'Bookmarks'} data={data} currentUrl={active?.url || ''} isPrivate={!!active?.isPrivate} onChange={setData} onNavigate={navigate} onClose={()=>setPanel(null)}/>
       <MediaPanel visible={mediaVisible} media={media} onClose={()=>setMediaVisible(false)}
         onAction={(tabId,command)=>{const wv=refs.current[tabId];const value=command==='mute'?!media[tabId]?.muted:undefined;wv?.injectJavaScript('window.__novaCmd && window.__novaCmd(' + JSON.stringify(command) + ', ' + JSON.stringify(value) + '); true;');}}
         onStopAll={()=>{Object.keys(media).forEach(id=>refs.current[id]?.injectJavaScript("window.__novaCmd && window.__novaCmd('pause'); true;"));dispatchMedia({type:'stopAll'});}}

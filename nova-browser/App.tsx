@@ -96,7 +96,7 @@ export default function App() {
     setError(null);
     const url = r.kind === 'url' ? r.url : buildSearchUrl([...BUILTIN_ENGINES,...data.customEngines].find(e => e.id === data.settings.searchEngineId) ?? BUILTIN_ENGINES[2], r.query);
     dispatchTabs(s => T.updateTab(s, active.id, { url }));
-  }, [input, active, data.settings.searchEngineId]);
+  }, [input, active, data.settings.searchEngineId, data.customEngines]);
 
   const onMessage = (tabId: string, isPrivate: boolean) => (e: WebViewMessageEvent) => {
     try {

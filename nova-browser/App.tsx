@@ -89,6 +89,11 @@ export default function App() {
   }, [media]);
 
   const active = tabs.tabs.find(t => t.id === tabs.activeId);
+  const closeTab = (id: string) => {
+    refs.current[id]?.injectJavaScript("window.__novaCmd && window.__novaCmd('pause'); true;");
+    dispatchTabs(st => T.closeTab(st, id));
+    dispatchMedia({ type: 'tabClosed', tabId: id });
+  };
   const go = useCallback(() => {
     if (!active) return;
     const r = resolveInput(input);
@@ -194,7 +199,7 @@ export default function App() {
         <Pressable accessibilityLabel="Browser menu" onPress={()=>setPanel('Bookmarks')}><Text style={[s.btn,{color:c.fg}]}>☰</Text></Pressable>
         <Text style={{color:c.fg}}>{tabs.tabs.length}</Text>
         <Pressable accessibilityLabel="Reopen closed tab" onPress={()=>dispatchTabs(T.reopenClosed)}><Text style={[s.btn,{color:c.fg}]}>↺</Text></Pressable>
-        <Pressable accessibilityLabel="Close tab" onPress={()=>active&&dispatchTabs(st=>T.closeTab(st,active.id))}><Text style={[s.btn,{color:c.fg}]}>✕</Text></Pressable>
+        <Pressable accessibilityLabel="Close tab" onPress={()=>active&&closeTab(active.id)}><Text style={[s.btn,{color:c.fg}]}>✕</Text></Pressable>
       </View>
       <View style={s.menuRow}>
         <Pressable onPress={()=>setTabsVisible(true)}><Text style={s.menuText}>Tabs</Text></Pressable>
@@ -207,7 +212,7 @@ export default function App() {
         onStopAll={()=>{Object.keys(media).forEach(id=>refs.current[id]?.injectJavaScript("window.__novaCmd && window.__novaCmd('pause'); true;"));dispatchMedia({type:'stopAll'});}}
         onSwitchTab={id=>dispatchTabs(st=>T.switchTab(st,id))}/>
       <TabsPanel visible={tabsVisible} tabs={tabs.tabs} activeId={tabs.activeId} groups={data.groups} onClose={()=>setTabsVisible(false)}
-        onSwitch={id=>dispatchTabs(st=>T.switchTab(st,id))} onCloseTab={id=>dispatchTabs(st=>T.closeTab(st,id))}
+        onSwitch={id=>dispatchTabs(st=>T.switchTab(st,id))} onCloseTab={closeTab}
         onDuplicate={id=>dispatchTabs(st=>T.duplicateTab(st,id))} onPin={id=>dispatchTabs(st=>T.togglePin(st,id))}
         onCreateGroup={name=>{const nextData=createGroup(data,name);setData(nextData);const g=nextData.groups[nextData.groups.length-1];if(g&&active&&!active.isPrivate){setData(assignTabToGroup(nextData,g.id,active.id));dispatchTabs(st=>T.updateTab(st,active.id,{groupId:g.id}));}}}
         onAssignGroup={(tabId,groupId)=>{const tab=tabs.tabs.find(x=>x.id===tabId);if(tab?.isPrivate)return;if(groupId){setData(d=>assignTabToGroup(d,groupId,tabId));dispatchTabs(st=>T.updateTab(st,tabId,{groupId}));}else{setData(d=>({...d,groups:d.groups.map(g=>({...g,tabIds:g.tabIds.filter(x=>x!==tabId)}))}));dispatchTabs(st=>T.updateTab(st,tabId,{groupId:undefined}));}}}/>

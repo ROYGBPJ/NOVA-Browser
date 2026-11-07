@@ -59,7 +59,7 @@ export function togglePin(s: TabsState, id: string): TabsState {
   return { ...s, tabs };
 }
 
-export function updateTab(s: TabsState, id: string, patch: Partial<Pick<Tab, 'url' | 'title'>>): TabsState {
+export function updateTab(s: TabsState, id: string, patch: Partial<Pick<Tab, 'url' | 'title' | 'pinned' | 'groupId'>>): TabsState {
   return { ...s, tabs: s.tabs.map(t => (t.id === id ? { ...t, ...patch } : t)) };
 }
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, View, Text, Pressable, TextInput, Switch, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, AppState, Modal, ScrollView, View, Text, Pressable, TextInput, Switch, StyleSheet } from 'react-native';
 import type { BrowserData, Bookmark, PermissionKind } from './src/core/browserData';
 import { removeBookmark, clearHistory, updateSettings, setPermission, permissionFor, originOf } from './src/core/browserData';
 import { authenticateVault, readVault, saveLogin, deleteLogin, type SavedLogin } from './src/security/passwordVault';
@@ -17,6 +17,12 @@ export default function BrowserPanel({ visible, section, data, currentUrl, onCha
   const [logins, setLogins] = useState<SavedLogin[]>([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state !== 'active') { setUnlocked(false); setLogins([]); setPassword(''); }
+    });
+    return () => sub.remove();
+  }, []);
   const title = sections.includes(section) ? section : 'NOVA';
   const action = (label: string, fn: () => void) => <Pressable key={label} style={p.action} onPress={fn}><Text style={p.actionText}>{label}</Text></Pressable>;
   const unlock = async () => {

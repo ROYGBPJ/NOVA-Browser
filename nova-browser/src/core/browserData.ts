@@ -4,6 +4,7 @@
  */
 import { hostOf } from './url.ts';
 import type { Tab } from './tabs';
+import { addCustomEngine, removeEngine, type SearchEngine } from './search';
 
 export type HistoryEntry = { id: string; url: string; title: string; visitedAt: number };
 export type Bookmark = { id: string; url: string; title: string; folder: string; createdAt: number };
@@ -44,7 +45,7 @@ export const DEFAULT_SETTINGS: BrowserSettings = {
   readerTheme: 'light', translateTarget: 'en'
 };
 export const emptyBrowserData = (): BrowserData => ({
-  version: 1, bookmarks: [], history: [], downloads: [], permissions: [], groups: [],
+  version: 1, bookmarks: [], customEngines: [], history: [], downloads: [], permissions: [], groups: [],
   settings: { ...DEFAULT_SETTINGS }
 });
 const id = (prefix: string) => prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
@@ -107,6 +108,12 @@ export function assignTabToGroup(data: BrowserData, groupId: string, tabId: stri
 }
 export function removeGroup(data: BrowserData, groupId: string): BrowserData {
   return { ...data, groups: data.groups.filter(g => g.id !== groupId) };
+}
+export function addCustomSearch(data: BrowserData, name: string, template: string): BrowserData {
+  return { ...data, customEngines: addCustomEngine(data.customEngines, name, template) };
+}
+export function removeCustomSearch(data: BrowserData, engineId: string): BrowserData {
+  return { ...data, customEngines: removeEngine(data.customEngines, engineId) };
 }
 export function updateSettings(data: BrowserData, patch: Partial<BrowserSettings>): BrowserData {
   return { ...data, settings: { ...data.settings, ...patch } };

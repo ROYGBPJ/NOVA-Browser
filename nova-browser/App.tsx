@@ -60,6 +60,13 @@ export default function App() {
     if (!loaded.current) return;
     FileSystem.writeAsStringAsync(DATA_FILE, serializeBrowserData(data)).catch(() => {});
   }, [data]);
+  useEffect(() => {
+    if (!data.settings.clearOnExit) return;
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'background') setData(d => ({ ...d, history: [], permissions: [] }));
+    });
+    return () => sub.remove();
+  }, [data.settings.clearOnExit]);
 
   useEffect(() => {
     const sub = NovaMedia.onRemoteCommand(({ command, position, interval }) => {

@@ -30,6 +30,7 @@ export type BrowserSettings = {
 export type BrowserData = {
   version: 1;
   bookmarks: Bookmark[];
+  customEngines: SearchEngine[];
   history: HistoryEntry[];
   downloads: DownloadRecord[];
   permissions: SitePermission[];
@@ -59,6 +60,7 @@ export function normalizeBrowserData(raw: string | null): BrowserData {
     if (v?.version !== 1) return emptyBrowserData();
     return {
       version: 1, bookmarks: Array.isArray(v.bookmarks) ? v.bookmarks : [],
+      customEngines: Array.isArray(v.customEngines) ? v.customEngines : [],
       history: Array.isArray(v.history) ? v.history : [],
       downloads: Array.isArray(v.downloads) ? v.downloads : [],
       permissions: Array.isArray(v.permissions) ? v.permissions : [],

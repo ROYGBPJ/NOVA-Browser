@@ -27,7 +27,7 @@ export default function TabsPanel(props:Props) {
           <Pressable onPress={()=>props.onDuplicate(t.id)}><Text style={s.action}>Duplicate</Text></Pressable>
           <Pressable onPress={()=>props.onPin(t.id)}><Text style={s.action}>{t.pinned?'Unpin':'Pin'}</Text></Pressable>
           <Pressable onPress={()=>props.onCloseTab(t.id)}><Text style={s.action}>×</Text></Pressable>
-          {props.groups.length>0&&<View style={s.groupRow}>
+          {props.groups.length>0&&!t.isPrivate&&<View style={s.groupRow}>
             {props.groups.map(g=><Pressable key={g.id} onPress={()=>props.onAssignGroup(t.id,g.id)}><Text style={s.groupAction}>{t.groupId===g.id?'✓ ':''}{g.name}</Text></Pressable>)}
             {t.groupId&&<Pressable onPress={()=>props.onAssignGroup(t.id,undefined)}><Text style={s.groupAction}>Remove group</Text></Pressable>}
           </View>}

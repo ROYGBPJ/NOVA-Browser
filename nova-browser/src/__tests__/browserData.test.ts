@@ -51,8 +51,10 @@ test('custom search engines persist and can be removed', () => {
   let d = addCustomSearch(emptyBrowserData(), 'Example Search', 'https://search.example/?q=%s');
   assert.equal(d.customEngines.length, 1);
   assert.equal(normalizeBrowserData(serializeBrowserData(d)).customEngines[0].name, 'Example Search');
+  d = updateSettings(d, { searchEngineId: d.customEngines[0].id });
   d = removeCustomSearch(d, d.customEngines[0].id);
   assert.equal(d.customEngines.length, 0);
+  assert.equal(d.settings.searchEngineId, 'ddg');
   assert.throws(() => addCustomSearch(d, 'Broken', 'javascript:alert(1)'), /http/);
 });
 test('tracker and navigation filters are conservative', () => {

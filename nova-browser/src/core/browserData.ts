@@ -4,7 +4,7 @@
  */
 import { hostOf } from './url.ts';
 import type { Tab } from './tabs';
-import { addCustomEngine, removeEngine, type SearchEngine } from './search.ts';
+import { addCustomEngine, type SearchEngine } from './search.ts';
 
 export type HistoryEntry = { id: string; url: string; title: string; visitedAt: number };
 export type Bookmark = { id: string; url: string; title: string; folder: string; createdAt: number };
@@ -115,7 +115,7 @@ export function addCustomSearch(data: BrowserData, name: string, template: strin
   return { ...data, customEngines: addCustomEngine(data.customEngines, name, template) };
 }
 export function removeCustomSearch(data: BrowserData, engineId: string): BrowserData {
-  return { ...data, customEngines: removeEngine(data.customEngines, engineId) };
+  return { ...data, customEngines: data.customEngines.filter(engine => engine.id !== engineId) };
 }
 export function updateSettings(data: BrowserData, patch: Partial<BrowserSettings>): BrowserData {
   return { ...data, settings: { ...data.settings, ...patch } };
